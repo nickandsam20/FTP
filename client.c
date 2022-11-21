@@ -10,7 +10,8 @@ int main(){
     struct sockaddr_in server_addr; 
     int c_socket,connect_result,argc;
     char input[40],send_buffer[512],recv_buffer[512];
-    char cmd[10],filename[20],argu[10];
+    char cmd[10],filename[20],argu[15];
+    char username[20];
     if((c_socket = socket(AF_INET,SOCK_STREAM,0))<0){
         perror("open socket failed !\n");
         exit(1);
@@ -25,7 +26,12 @@ int main(){
         perror("connect to server failed !\n");
         exit(1);
     }
+    printf("please Enter username :");
+    fgets(username,sizeof(input),stdin);
+    send(c_socket,username,sizeof(username),0); // send username to server
     while(1){
+        memset(send_buffer,'\0',sizeof(send_buffer));
+        memset(recv_buffer,'\0',sizeof(recv_buffer));
         fgets(input,sizeof(input),stdin);
         argc = sscanf(input,"%s %s %s",cmd,filename,argu);
         if(argc == 1){
@@ -46,7 +52,14 @@ int main(){
                 strcpy(send_buffer,input);
                 send(c_socket,send_buffer,sizeof(send_buffer),0);
                 recv(c_socket,recv_buffer,sizeof(recv_buffer),0);
-                printf("%s\n",recv_buffer);
+                printf("%s",recv_buffer);
+            }
+            if(strcmp(cmd,"mode")==0){ // modify access right
+                printf("modify %s premission to %s\n",filename,argu);
+                strcpy(send_buffer,input);
+                send(c_socket,send_buffer,sizeof(send_buffer),0);
+                recv(c_socket,recv_buffer,sizeof(recv_buffer),0);
+                printf("%s",recv_buffer);
             }
         }else{
             printf("invalid command\n");
