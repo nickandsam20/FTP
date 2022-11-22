@@ -27,7 +27,7 @@ int main(){
         exit(1);
     }
     printf("please Enter username :");
-    fgets(username,sizeof(input),stdin);
+    scanf("%s",username);
     send(c_socket,username,sizeof(username),0); // send username to server
     while(1){
         memset(send_buffer,'\0',sizeof(send_buffer));

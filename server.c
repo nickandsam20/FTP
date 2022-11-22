@@ -81,9 +81,54 @@ int modify_access_right(char *filename,char *permission,char *username){
         return 0;
     }
 }
+int read_file(char *filename,char *username,char *group){
+    int p;
+    p = check_permission(filename,0,group,username);
+    return p;
+}
 
-int check_permission(char *filename,int action){
-    
+int write_file(char *filename,char *username,char *group){
+    int p;
+    p = check_permission(filename,0,group,username);
+    return p;
+}
+
+int check_permission(char *filename,int action,char *group, char *username){ //action 0 read ; 1 write
+    FILE *fp;
+    char line[80],f_owner[20],f_name[20],f_permission[15],f_group[10];
+    fp = fopen(access_right,"r");
+    while(fgets(line,sizeof(line),fp)!=NULL){
+        sscanf(line,"%s %s %s %s",f_name,f_permission,f_owner,f_group);
+        if(strcmp(f_name,filename)==0){
+            if(action==0){ // check read premission
+                if(f_permission[6]=='r') // check if everyone can read or not
+                    return 0;
+                if(strcmp(f_group,group)==0){ // if he/she is group member
+                    if(f_permission[3]=='r')
+                        return 0;
+                }
+                if(strcmp(f_owner,username)==0){
+                    if(f_permission[0]=='r')
+                        return 0;
+                }
+                return -2;// doesnt have permission to read
+            }else{ //write
+                if(f_permission[7]=='w') // check if everyone can write or not
+                    return 0;
+                if(strcmp(f_group,group)==0){ // if he/she is group member
+                    if(f_permission[4]=='w')
+                        return 0;
+                }
+                if(strcmp(f_owner,username)==0){
+                    if(f_permission[1]=='w')
+                        return 0;
+                }
+                return -2;// doesnt have permission to write
+            }
+        }else{ // file doesnt exist
+            return -1;
+        }
+    }
 }
 
 int main(int argc ,char* argv[]){
