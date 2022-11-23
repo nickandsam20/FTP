@@ -45,6 +45,15 @@ int main(){
                 printf("read file %s \n",filename);
                 strcpy(send_buffer,input);
                 send(c_socket,send_buffer,sizeof(send_buffer),0);
+                recv(c_socket,recv_buffer,sizeof(recv_buffer),0);
+                printf("%s",recv_buffer);
+            }
+            if(strcmp(cmd,"write")==0){ // write file
+                printf("write file %s \n",filename);
+                strcpy(send_buffer,input);
+                send(c_socket,send_buffer,sizeof(send_buffer),0);
+                recv(c_socket,recv_buffer,sizeof(recv_buffer),0);
+                printf("%s",recv_buffer);
             }
         }else if(argc == 3){
             if(strcmp(cmd,"create")==0){ // create file

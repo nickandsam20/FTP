@@ -10,6 +10,7 @@
 
 #define access_right "server_data/access_table.txt"
 #define group_member_path "server_data/group.txt"
+
 int create_file(char *filename ,char *permission ,char *group ,char *owner){// file exist return 1 ; or return 0
     FILE *fp;
     char file_path[50] = "server_data/";
@@ -17,7 +18,7 @@ int create_file(char *filename ,char *permission ,char *group ,char *owner){// f
     printf("file path :%s\n",file_path);
     if(access(filename,F_OK)==0){
         return 1;
-    }else{
+    }else{ // write to access table
         fp = fopen(file_path ,"w");
         fclose(fp);
         fp = fopen(access_right , "a");
@@ -33,6 +34,7 @@ int create_file(char *filename ,char *permission ,char *group ,char *owner){// f
         return 0;
     }
 }
+
 void search_group(char *username, char *group){
     FILE *fp;
     char line[30],member[20],g[10];
@@ -89,7 +91,7 @@ int read_file(char *filename,char *username,char *group){
 
 int write_file(char *filename,char *username,char *group){
     int p;
-    p = check_permission(filename,0,group,username);
+    p = check_permission(filename,1,group,username);
     return p;
 }
 
@@ -186,8 +188,38 @@ int main(int argc ,char* argv[]){
                         }
                         break;
                     case 'r': // read file
+                        sscanf(recv_buffer,"%s %s",cmd,filename);
+                        int result = write_file(filename,username,group);
+                        if(result == 0){
+                            strcpy(send_buffer,"read file success! \n");
+                            send(new_socket,send_buffer,sizeof(send_buffer),0);
+                        }else if(result == -1){
+                            strcpy(send_buffer,"file isn`t exist! \n");
+                            send(new_socket,send_buffer,sizeof(send_buffer),0);
+                        }else if(result == -2){
+                            strcpy(send_buffer,"you don`t have permission to read this file! \n");
+                            send(new_socket,send_buffer,sizeof(send_buffer),0);
+                        }else{
+                            strcpy(send_buffer,"unhandle error! \n");
+                            send(new_socket,send_buffer,sizeof(send_buffer),0);
+                        }
                         break;
                     case 'w': // write file
+                        sscanf(recv_buffer,"%s %s",cmd,filename);
+                        int result = write_file(filename,username,group);
+                        if(result == 0){
+                            strcpy(send_buffer,"wirte file success! \n");
+                            send(new_socket,send_buffer,sizeof(send_buffer),0);
+                        }else if(result == -1){
+                            strcpy(send_buffer,"file isn`t exist! \n");
+                            send(new_socket,send_buffer,sizeof(send_buffer),0);
+                        }else if(result == -2){
+                            strcpy(send_buffer,"you don`t have permission to write this file! \n");
+                            send(new_socket,send_buffer,sizeof(send_buffer),0);
+                        }else{
+                            strcpy(send_buffer,"unhandle error! \n");
+                            send(new_socket,send_buffer,sizeof(send_buffer),0);
+                        }
                         break;
                     case 'm': // modify permission
                         sscanf(recv_buffer,"%s %s %s",cmd,filename,argu);
