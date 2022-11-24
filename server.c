@@ -7,16 +7,17 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <sys/file.h>
 
 #define access_right "server_data/access_table.txt"
 #define group_member_path "server_data/group.txt"
 
 int create_file(char *filename ,char *permission ,char *group ,char *owner){// file exist return 1 ; or return 0
     FILE *fp;
-    char file_path[50] = "server_data/";
+    char file_path[50] = "server_data/file/";
     strcat(file_path,filename);
     printf("file path :%s\n",file_path);
-    if(access(filename,F_OK)==0){
+    if(access(file_path,F_OK)==0){
         return 1;
     }else{ // write to access table
         fp = fopen(file_path ,"w");
@@ -84,14 +85,56 @@ int modify_access_right(char *filename,char *permission,char *username){
     }
 }
 int read_file(char *filename,char *username,char *group){
-    int p;
+    int p,finish;
+    FILE *fp;
+    char file_path[50] = "server_data/file/";
     p = check_permission(filename,0,group,username);
+    if(p==0){
+        strcat(file_path,filename);
+        fp = fopen(file_path,"r");
+        if(flock(fp->_fileno,LOCK_SH|LOCK_NB)==0){//lock the file
+            printf("%s is shared locked !\n",filename);
+            /*while(1){
+                scanf("%d",&finish);
+                if(finish==0){
+                    flock(fileno(fp),LOCK_UN);
+                    break;
+                }
+            }*/
+            sleep(10);
+            fclose(fp);
+            flock(fp->_fileno,LOCK_UN);
+        }else{
+            printf("somebody is writing this file!\n");
+        }
+    }
     return p;
 }
 
 int write_file(char *filename,char *username,char *group){
-    int p;
+    int p,finish;
+    FILE *fp;
+    char file_path[50] = "server_data/file/";
     p = check_permission(filename,1,group,username);
+    if(p==0){
+        strcat(file_path,filename);
+        fp = fopen(file_path,"w");
+        if(flock(fp->_fileno,LOCK_EX|LOCK_NB)==0){//lock the file
+            printf("%s is locked !\n",filename);
+            /*while(1){
+                scanf("%d",&finish);
+                if(finish==0){
+                    flock(fileno(fp),LOCK_UN);
+                    break;
+                }
+            }*/
+            sleep(10);
+            fclose(fp);
+            flock(fp->_fileno,LOCK_UN);
+        }else{
+            printf("somebody is writing/reading this file\n");
+        }
+    }
     return p;
 }
 
@@ -189,14 +232,14 @@ int main(int argc ,char* argv[]){
                         break;
                     case 'r': // read file
                         sscanf(recv_buffer,"%s %s",cmd,filename);
-                        int result = write_file(filename,username,group);
-                        if(result == 0){
+                        int read_result = read_file(filename,username,group);
+                        if(read_result == 0){
                             strcpy(send_buffer,"read file success! \n");
                             send(new_socket,send_buffer,sizeof(send_buffer),0);
-                        }else if(result == -1){
+                        }else if(read_result == -1){
                             strcpy(send_buffer,"file isn`t exist! \n");
                             send(new_socket,send_buffer,sizeof(send_buffer),0);
-                        }else if(result == -2){
+                        }else if(read_result == -2){
                             strcpy(send_buffer,"you don`t have permission to read this file! \n");
                             send(new_socket,send_buffer,sizeof(send_buffer),0);
                         }else{
@@ -206,14 +249,14 @@ int main(int argc ,char* argv[]){
                         break;
                     case 'w': // write file
                         sscanf(recv_buffer,"%s %s",cmd,filename);
-                        int result = write_file(filename,username,group);
-                        if(result == 0){
+                        int write_result = write_file(filename,username,group);
+                        if(write_result == 0){
                             strcpy(send_buffer,"wirte file success! \n");
                             send(new_socket,send_buffer,sizeof(send_buffer),0);
-                        }else if(result == -1){
+                        }else if(write_result == -1){
                             strcpy(send_buffer,"file isn`t exist! \n");
                             send(new_socket,send_buffer,sizeof(send_buffer),0);
-                        }else if(result == -2){
+                        }else if(write_result == -2){
                             strcpy(send_buffer,"you don`t have permission to write this file! \n");
                             send(new_socket,send_buffer,sizeof(send_buffer),0);
                         }else{
