@@ -84,36 +84,48 @@ int modify_access_right(char *filename,char *permission,char *username){
         return 0;
     }
 }
-int read_file(char *filename,char *username,char *group){
-    int p,finish;
+int read_file(char *filename,char *username,char *group,int socket){
+    int p;
     FILE *fp;
     char file_path[50] = "server_data/file/";
+    char line[1024];
+    char c_reply[10];
+    printf("here\n");
     p = check_permission(filename,0,group,username);
     if(p==0){
+        printf("allow to read\n");
         strcat(file_path,filename);
         fp = fopen(file_path,"r");
         if(flock(fp->_fileno,LOCK_SH|LOCK_NB)==0){//lock the file
-            printf("%s is shared locked !\n",filename);
+            printf("sending %s to %s !\n",filename,username);
+            while(fgets(line,sizeof(line),fp)!=NULL){
+                if(send(socket,line,sizeof(line),0)==-1){
+                    perror("Error occurs when sending file to client\n");
+                    exit(1);
+                }
+                memset(line,"\0",sizeof(line));
+            }
             /*while(1){
-                scanf("%d",&finish);
-                if(finish==0){
-                    flock(fileno(fp),LOCK_UN);
+                recv(socket,c_reply,sizeof(c_reply),0);
+                if(strcmp(c_reply,":fin") == 0){
                     break;
                 }
+                memset(c_reply,"\0",0);
             }*/
-            sleep(10);
             fclose(fp);
             flock(fp->_fileno,LOCK_UN);
         }else{
             printf("somebody is writing this file!\n");
+            return -3;
         }
     }
     return p;
 }
 
-int write_file(char *filename,char *username,char *group){
+int write_file(char *filename,char *username,char *group,int socket){
     int p,finish;
     FILE *fp;
+    char line[1024];
     char file_path[50] = "server_data/file/";
     p = check_permission(filename,1,group,username);
     if(p==0){
@@ -178,6 +190,7 @@ int check_permission(char *filename,int action,char *group, char *username){ //a
 
 int main(int argc ,char* argv[]){
     int sockfd,bind_result,new_socket;
+    int read_result;
     struct sockaddr_in addr,client_addr;
     pid_t child_p;
     char recv_buffer[512],send_buffer[512],cmd[10],filename[20],argu[15];
@@ -232,7 +245,8 @@ int main(int argc ,char* argv[]){
                         break;
                     case 'r': // read file
                         sscanf(recv_buffer,"%s %s",cmd,filename);
-                        int read_result = read_file(filename,username,group);
+                        printf("get a read file request from %s\n",username);
+                        read_result = read_file(filename,username,group,new_socket);
                         if(read_result == 0){
                             strcpy(send_buffer,"read file success! \n");
                             send(new_socket,send_buffer,sizeof(send_buffer),0);
@@ -242,6 +256,9 @@ int main(int argc ,char* argv[]){
                         }else if(read_result == -2){
                             strcpy(send_buffer,"you don`t have permission to read this file! \n");
                             send(new_socket,send_buffer,sizeof(send_buffer),0);
+                        }else if(read_result == -3){
+                            strcpy(send_buffer,"somebody is writing/reading this file,please try again later! \n");
+                            send(new_socket,send_buffer,sizeof(send_buffer),0);
                         }else{
                             strcpy(send_buffer,"unhandle error! \n");
                             send(new_socket,send_buffer,sizeof(send_buffer),0);
@@ -249,7 +266,7 @@ int main(int argc ,char* argv[]){
                         break;
                     case 'w': // write file
                         sscanf(recv_buffer,"%s %s",cmd,filename);
-                        int write_result = write_file(filename,username,group);
+                        int write_result = write_file(filename,username,group,new_socket);
                         if(write_result == 0){
                             strcpy(send_buffer,"wirte file success! \n");
                             send(new_socket,send_buffer,sizeof(send_buffer),0);

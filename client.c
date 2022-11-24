@@ -5,6 +5,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <sys/file.h>
+
+
+int get_file(int socket,char* filename,char *send_buffer){
+    FILE *fp;
+    char file_path[50] = "client_data/";
+    char overwrite;
+    char file_buffer[1024];
+    int n;
+    strcat(file_path,filename);
+    if(access(file_path,F_OK) == 0){ // file is already exist , ask user want to overwrite it or not
+        printf("%s is already exist do you want to overwrite it? [Y/N]\n",filename);
+        while(1){
+            scanf("%c",&overwrite);
+            if(overwrite=='Y'||overwrite=='y'){
+                break;
+            }else if(overwrite=='N'||overwrite=='n'){
+                return -1;
+            }
+        }
+    }
+    fp = fopen(file_path,"w");
+    send(socket,send_buffer,sizeof(send_buffer),0);
+    while(1){
+        n = recv(socket,file_buffer,sizeof(file_buffer),0);
+        if(n<=0){
+            break;
+        }
+        fputs(file_buffer,fp);
+        memset(file_buffer,'\0',sizeof(file_buffer));
+    }
+    return 0;
+}
 
 int main(){
     struct sockaddr_in server_addr; 
@@ -44,14 +79,15 @@ int main(){
             if(strcmp(cmd,"read")==0){ // read file
                 printf("read file %s \n",filename);
                 strcpy(send_buffer,input);
-                send(c_socket,send_buffer,sizeof(send_buffer),0);
-                recv(c_socket,recv_buffer,sizeof(recv_buffer),0);
-                printf("%s",recv_buffer);
+                if(get_file(c_socket,filename,send_buffer)==0){
+                    recv(c_socket,recv_buffer,sizeof(recv_buffer),0);
+                    printf("%s",recv_buffer);
+                }
             }
             if(strcmp(cmd,"write")==0){ // write file
                 printf("write file %s \n",filename);
                 strcpy(send_buffer,input);
-                send(c_socket,send_buffer,sizeof(send_buffer),0);
+                
                 recv(c_socket,recv_buffer,sizeof(recv_buffer),0);
                 printf("%s",recv_buffer);
             }
