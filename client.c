@@ -10,33 +10,79 @@
 #include <sys/file.h>
 
 
-int get_file(int socket,char* filename,char *send_buffer){
+int get_file(int socket,char* filename){
     FILE *fp;
     char file_path[50] = "client_data/";
-    char overwrite;
     char file_buffer[1024];
+    char recv_buffer[512];
     int n;
     strcat(file_path,filename);
+    recv(socket,recv_buffer,sizeof(recv_buffer),0); //wait for server reply if user can read or not
+    if(strcmp(recv_buffer,"read file success! \n")!=0){
+        printf("%s",recv_buffer);
+        return -1;
+    }
+    fp = fopen(file_path,"w");
+    while(1){
+        recv(socket,file_buffer,sizeof(file_buffer),0);
+        if(strcmp(file_buffer,"EOF")==0){
+            break;
+        }
+        fprintf(fp,"%s",file_buffer);
+        bzero(file_buffer,sizeof(file_buffer));
+    }
+    fclose(fp);
+    return 0;
+}
+int ul_file(int socket,char* filename){
+    FILE *fp;
+    char file_path[50] = "client_data/";
+    char line[1024];
+    char recv_buffer[512];
+    strcat(file_path,filename);
+    recv(socket,recv_buffer,sizeof(recv_buffer),0);//wait for server reply if user can ul or not
+    if(strcmp(recv_buffer,"write file success! \n")!=0){
+        printf("%s",recv_buffer);
+        return -1;
+    }
+    fp = fopen(file_path,"r");
+    while(fgets(line,sizeof(line),fp)!=NULL){ //start to upload the file
+        if(send(socket,line,sizeof(line),0)==-1){
+            perror("Error occurs when sending file to client\n");
+            exit(1);
+        }
+        memset(line,'\0',sizeof(line));
+    }
+    memset(line,'\0',sizeof(line));
+    strcpy(line,"EOF");//send to EOF to let server know file is transmit finished
+    sleep(5);
+    send(socket,line,sizeof(line),0);
+    fclose(fp);
+    return 0;
+}
+
+int check_file_exist(char* filename,int action){
+    FILE *fp;
+    char overwrite;
+    char file_path[50] = "client_data/";
+    strcat(file_path,filename);
+    if(action==1){ //check file exist for write
+        if(access(file_path,F_OK) == 0)
+            return 0;
+        else{
+            return -1;
+        }
+    } 
     if(access(file_path,F_OK) == 0){ // file is already exist , ask user want to overwrite it or not
         printf("%s is already exist do you want to overwrite it? [Y/N]\n",filename);
         while(1){
             scanf("%c",&overwrite);
             if(overwrite=='Y'||overwrite=='y'){
-                break;
+                return 0;
             }else if(overwrite=='N'||overwrite=='n'){
                 return -1;
             }
         }
-    }
-    fp = fopen(file_path,"w");
-    send(socket,send_buffer,sizeof(send_buffer),0);
-    while(1){
-        n = recv(socket,file_buffer,sizeof(file_buffer),0);
-        if(n<=0){
-            break;
-        }
-        fputs(file_buffer,fp);
-        memset(file_buffer,'\0',sizeof(file_buffer));
     }
     return 0;
 }
@@ -52,7 +98,6 @@ int main(){
         exit(1);
     }
     memset(&server_addr,'\0',sizeof(server_addr));
-    
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(1234);
@@ -64,6 +109,7 @@ int main(){
     printf("please Enter username :");
     scanf("%s",username);
     send(c_socket,username,sizeof(username),0); // send username to server
+    printf("usage : operator filename [permission/argument]\n");
     while(1){
         memset(send_buffer,'\0',sizeof(send_buffer));
         memset(recv_buffer,'\0',sizeof(recv_buffer));
@@ -77,21 +123,30 @@ int main(){
             }
         }else if(argc == 2){
             if(strcmp(cmd,"read")==0){ // read file
-                printf("read file %s \n",filename);
-                strcpy(send_buffer,input);
-                if(get_file(c_socket,filename,send_buffer)==0){
-                    recv(c_socket,recv_buffer,sizeof(recv_buffer),0);
-                    printf("%s",recv_buffer);
+                if(check_file_exist(filename,0)==0){
+                    strcpy(send_buffer,input);
+                    send(c_socket,send_buffer,sizeof(send_buffer),0); //send read request
+                    if(get_file(c_socket,filename)==0){
+                        printf("file read finished!\n");
+                    }
                 }
             }
-            if(strcmp(cmd,"write")==0){ // write file
-                printf("write file %s \n",filename);
-                strcpy(send_buffer,input);
-                
-                recv(c_socket,recv_buffer,sizeof(recv_buffer),0);
-                printf("%s",recv_buffer);
-            }
         }else if(argc == 3){
+            if(strcmp(cmd,"write")==0){ // write file
+                if(strcmp(argu,"w")==0||strcmp(argu,"a")==0){
+                    if(check_file_exist(filename,1)==0){
+                        strcpy(send_buffer,input);
+                        send(c_socket,send_buffer,sizeof(send_buffer),0); //send write request
+                        if(ul_file(c_socket,filename)==0){
+                            printf("file write finished!\n");
+                        }
+                    }else{
+                        printf("doesnt have %s\n",filename);
+                    }
+                }else{
+                    printf("usage : write [filename] [w/a]\n");
+                }
+            }
             if(strcmp(cmd,"create")==0){ // create file
                 printf("create file %s with premission %s\n",filename,argu);
                 strcpy(send_buffer,input);
@@ -106,8 +161,6 @@ int main(){
                 recv(c_socket,recv_buffer,sizeof(recv_buffer),0);
                 printf("%s",recv_buffer);
             }
-        }else{
-            printf("invalid command\n");
         }
         memset(cmd,'\0',sizeof(cmd));
         memset(filename,'\0',sizeof(filename));
