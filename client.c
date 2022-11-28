@@ -133,7 +133,7 @@ int main(){
             }
         }else if(argc == 3){
             if(strcmp(cmd,"write")==0){ // write file
-                if(strcmp(argu,"w")==0||strcmp(argu,"a")==0){
+                if(strcmp(argu,"o")==0||strcmp(argu,"a")==0){
                     if(check_file_exist(filename,1)==0){
                         strcpy(send_buffer,input);
                         send(c_socket,send_buffer,sizeof(send_buffer),0); //send write request
