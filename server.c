@@ -276,6 +276,9 @@ int main(int argc ,char* argv[]){
                         break;
                     case 'w': // write file
                         sscanf(recv_buffer,"%s %s %s",cmd,filename,argu);
+                        if(strcmp(argu,"o")==0){
+                            strcpy(argu,"w");
+                        }
                         printf("get a write %s request from %s\n",filename,username);
                         write_file(filename,username,group,new_socket,argu);
                         break;
