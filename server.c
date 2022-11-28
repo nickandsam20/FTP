@@ -51,6 +51,7 @@ void search_group(char *username, char *group){
     if(exist==0){
         strcmp(group,"None");
     }
+    fclose(fp);
 }
 
 int modify_access_right(char *filename,char *permission,char *username){
@@ -59,12 +60,12 @@ int modify_access_right(char *filename,char *permission,char *username){
     char buffer[80];
     int exist=0;
     fp = fopen(access_right,"r");
+    ftmp = fopen("server_data/replace.tmp","w");   
     while(fgets(line,sizeof(line),fp)!=NULL){
         sscanf(line,"%s %s %s %s",f_name,f_permission,f_owner,f_group);
         if(strcmp(f_name,filename)==0){ // find the file
             exist = 1;
             if(strcmp(username,f_owner)==0){ // if user is owner
-                ftmp = fopen("server_data/replace.tmp","w");   
                 sprintf(buffer,"%s %s %s %s\n",f_name,permission,f_owner,f_group);
                 fputs(buffer,ftmp);
             }else{
@@ -73,6 +74,7 @@ int modify_access_right(char *filename,char *permission,char *username){
         }else{
             fputs(line,ftmp);
         }
+        memset(line,'\0',sizeof(line));
     }
     remove(access_right);
     rename("server_data/replace.tmp",access_right);
@@ -122,6 +124,7 @@ void read_file(char *filename,char *username,char *group,int socket){
             memset(send_buffer,'\0',sizeof(send_buffer));
             strcpy(send_buffer,"EOF");
             send(socket,send_buffer,sizeof(send_buffer),0);
+            fclose(fp);
         }else{
             strcpy(send_buffer,"somebody is writing/reading this file,please try again later! \n");
             send(socket,send_buffer,sizeof(send_buffer),0);
@@ -205,6 +208,7 @@ int check_permission(char *filename,int action,char *group, char *username){ //a
             }
         }
     }
+    fclose(fp);
     if(exist==0){
         return -1;
     }
@@ -277,6 +281,7 @@ int main(int argc ,char* argv[]){
                         break;
                     case 'm': // modify permission
                         sscanf(recv_buffer,"%s %s %s",cmd,filename,argu);
+                        printf("%s %s %s\n",cmd,filename,argu);
                         int modify_result = modify_access_right(filename,argu,username);
                         if(modify_result==0){
                             strcpy(send_buffer,"access right was modified successfully! \n");

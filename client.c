@@ -29,7 +29,7 @@ int get_file(int socket,char* filename){
             break;
         }
         fprintf(fp,"%s",file_buffer);
-        bzero(file_buffer,sizeof(file_buffer));
+        memset(file_buffer,'\0',sizeof(file_buffer));
     }
     fclose(fp);
     return 0;
