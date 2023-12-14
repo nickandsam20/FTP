@@ -14,13 +14,13 @@
 #define all_right "server_data/all/all.txt"
 #define group_member_path "server_data/group.txt"
 
-bool fileExists(const char *fname) {
+int fileExists(const char *fname) {
   FILE *fp;
   if (fp = fopen(fname, "r")) {
     fclose(fp);
-    return true;
+    return 1;
   }
-  return false;
+  return 0;
 }
 
 int create_file(char *filename, char *permission, char *group,
@@ -239,22 +239,28 @@ void write_file(char *filename, char *username, char *group, int socket,
 int check_permission(char *filename, int action, char *group,
                      char *username) {  // action 0 read ; 1 write
   FILE *fp;
+  
   int exist = 0;
+
   char line[80], f_owner[20], f_name[20], f_permission[15], f_group[10];
 
   char p_file_name[100];
+  printf("[check_permission] start checking permission,filename:%s,action:%d,group:%s,username:%s\n",filename,action,group,username);
   sprintf(p_file_name, "%s%s.txt", user_right, username);
   printf("[check_permission]checking file:%s\n", p_file_name);
   fp = fopen(p_file_name, "r");
   while (fgets(line, sizeof(line), fp) != NULL) {
     sscanf(line, "%s %s", f_name, f_permission);
     if (strcmp(f_name, filename) == 0) {
-      if (action == 0) {  // read operation
-        if (f_permission[0] == "r") return 0;
+	  exist=1;
+      if (action == 0 && f_permission[0] == "r") {  // read operation
+      	printf("[check_permission] enable by user permission\n");
+    	return 0;  
       }
 
-      if (action == 1) {
-        if (f_permission[1] == "w") return 0;
+      if (action == 1 && f_permission[1] == "w") {
+        printf("[check_permission] enable by user permission\n");
+    	return 0; 
       }
       break;
     }
@@ -267,11 +273,14 @@ int check_permission(char *filename, int action, char *group,
   while (fgets(line, sizeof(line), fp) != NULL) {
     sscanf(line, "%s %s", f_name, f_permission);
     if (strcmp(f_name, filename) == 0) {
-      if (action == 0) {  // read operation
-        if (f_permission[0] == "r") return 0;
+      if (action == 0 && f_permission[0] == "r") {  // read operation
+      	printf("[check_permission] enable by group permission\n");
+    	return 0;  
       }
-      if (action == 1) {
-        if (f_permission[1] == "w") return 0;
+
+      if (action == 1 && f_permission[1] == "w") {
+        printf("[check_permission] enable by group permission\n");
+    	return 0; 
       }
       break;
     }
@@ -284,17 +293,25 @@ int check_permission(char *filename, int action, char *group,
   while (fgets(line, sizeof(line), fp) != NULL) {
     sscanf(line, "%s %s", f_name, f_permission);
     if (strcmp(f_name, filename) == 0) {
-      if (action == 0) {  // read operation
-        if (f_permission[0] == "r") return 0;
+      if (action == 0 && f_permission[0] == "r") {  // read operation
+      	printf("[check_permission] enable by all permission\n");
+    	return 0;  
       }
-      if (action == 1) {
-        if (f_permission[1] == "w") return 0;
+
+      if (action == 1 && f_permission[1] == "w") {
+        printf("[check_permission] enable by all permission\n");
+    	return 0; 
       }
       break;
     }
   }
   fclose(fp);
-  return -1;
+  
+  if(!exist){
+	  printf("file is not exist\n");
+	  return -1;
+ }
+  return -2;
 
   /*
 fp = fopen(access_right, "r");

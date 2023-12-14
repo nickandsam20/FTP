@@ -1,1 +1,1 @@
-test1.txt rwx
+test1.txt ---
