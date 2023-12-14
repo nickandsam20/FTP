@@ -264,7 +264,7 @@ void read_file(char *filename, char *username, char *group, int socket) {
         memset(line, '\0', sizeof(line));
       }
       sleep(5);
-      fclose(fp);
+      // fclose(fp);
       flock(fp->_fileno, LOCK_UN);
       memset(send_buffer, '\0', sizeof(send_buffer));
       strcpy(send_buffer, "EOF");
