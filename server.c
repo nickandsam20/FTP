@@ -114,37 +114,111 @@ void search_group(char *username, char *group) {
   fclose(fp);
 }
 
-int modify_access_right(char *filename, char *permission, char *username) {
+int modify_access_right(char *filename, char *permission, char *username,
+                        char *group) {
   FILE *fp, *ftmp;
   char line[80], f_owner[20], f_name[20], f_permission[15], f_group[10];
   char buffer[80];
   int exist = 0;
-  fp = fopen(access_right, "r");
-  ftmp = fopen("server_data/replace.tmp", "w");
+  char p_name[100], p_tmp_name[100];
+
+  sprintf(p_name, "%s%s.txt", user_right, username);
+  sprintf(p_tmp_name, "%s%stmp.txt", user_right, username);
+
+  fp = fopen(p_name, "r");
+  ftmp = fopen(p_tmp_name, "w");
   while (fgets(line, sizeof(line), fp) != NULL) {
-    sscanf(line, "%s %s %s %s", f_name, f_permission, f_owner, f_group);
+    sscanf(line, "%s %s", f_name, f_permission);
     if (strcmp(f_name, filename) == 0) {  // find the file
       exist = 1;
-      if (strcmp(username, f_owner) == 0) {  // if user is owner
-        sprintf(buffer, "%s %s %s %s\n", f_name, permission, f_owner, f_group);
-        fputs(buffer, ftmp);
-      } else {
-        return -1;
-      }
+      char new_line[50];
+      sprintf(new_line, "%s %s", f_name, f_permission);
+      fputs(new_line, ftmp);
     } else {
       fputs(line, ftmp);
     }
     memset(line, '\0', sizeof(line));
   }
-  remove(access_right);
-  rename("server_data/replace.tmp", access_right);
+  if (!exist) {
+    fclose(fp);
+    fclose(ftmp);
+    remove(p_tmp_name);
+    return -1;
+  }
   fclose(fp);
   fclose(ftmp);
-  if (exist == 0) {
-    return -2;
-  } else {
-    return 0;
+  remove(p_name);
+  rename(p_tmp_name, p_name);
+
+  sprintf(p_name, "%s%s.txt", group_right, group);
+  sprintf(p_tmp_name, "%s%stmp.txt", user_right, group);
+
+  fp = fopen(p_name, "r");
+  ftmp = fopen(p_tmp_name, "w");
+  while (fgets(line, sizeof(line), fp) != NULL) {
+    sscanf(line, "%s %s", f_name, f_permission);
+    if (strcmp(f_name, filename) == 0) {  // find the file
+      char new_line[50];
+      sprintf(new_line, "%s %s", f_name, f_permission);
+      fputs(new_line, ftmp);
+    } else {
+      fputs(line, ftmp);
+    }
+    memset(line, '\0', sizeof(line));
   }
+  fclose(fp);
+  fclose(ftmp);
+  remove(p_name);
+  rename(p_tmp_name, p_name);
+
+  sprintf(p_name, "%s", all_right, );
+  sprintf(p_tmp_name, "server_data/all/all_right_tmp.txt");
+
+  fp = fopen(p_name, "r");
+  ftmp = fopen(p_tmp_name, "w");
+  while (fgets(line, sizeof(line), fp) != NULL) {
+    sscanf(line, "%s %s", f_name, f_permission);
+    if (strcmp(f_name, filename) == 0) {  // find the file
+      char new_line[50];
+      sprintf(new_line, "%s %s", f_name, f_permission);
+      fputs(new_line, ftmp);
+    } else {
+      fputs(line, ftmp);
+    }
+    memset(line, '\0', sizeof(line));
+  }
+
+  fclose(fp);
+  fclose(ftmp);
+  remove(p_name);
+  rename(p_tmp_name, p_name);
+  return 0;
+  /*
+    fp = fopen(access_right, "r");
+    ftmp = fopen("server_data/replace.tmp", "w");
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      sscanf(line, "%s %s %s %s", f_name, f_permission, f_owner, f_group);
+      if (strcmp(f_name, filename) == 0) {  // find the file
+        exist = 1;
+        if (strcmp(username, f_owner) == 0) {  // if user is owner
+          sprintf(buffer, "%s %s %s %s\n", f_name, permission, f_owner,
+    f_group); fputs(buffer, ftmp); } else { return -1;
+        }
+      } else {
+        fputs(line, ftmp);
+      }
+      memset(line, '\0', sizeof(line));
+    }
+    remove(access_right);
+    rename("server_data/replace.tmp", access_right);
+    fclose(fp);
+    fclose(ftmp);
+    if (exist == 0) {
+      return -2;
+    } else {
+      return 0;
+    }
+    */
 }
 void read_file(char *filename, char *username, char *group, int socket) {
   int p;
@@ -239,28 +313,31 @@ void write_file(char *filename, char *username, char *group, int socket,
 int check_permission(char *filename, int action, char *group,
                      char *username) {  // action 0 read ; 1 write
   FILE *fp;
-  
+
   int exist = 0;
 
   char line[80], f_owner[20], f_name[20], f_permission[15], f_group[10];
 
   char p_file_name[100];
-  printf("[check_permission] start checking permission,filename:%s,action:%d,group:%s,username:%s\n",filename,action,group,username);
+  printf(
+      "[check_permission] start checking "
+      "permission,filename:%s,action:%d,group:%s,username:%s\n",
+      filename, action, group, username);
   sprintf(p_file_name, "%s%s.txt", user_right, username);
   printf("[check_permission]checking file:%s\n", p_file_name);
   fp = fopen(p_file_name, "r");
   while (fgets(line, sizeof(line), fp) != NULL) {
     sscanf(line, "%s %s", f_name, f_permission);
     if (strcmp(f_name, filename) == 0) {
-	  exist=1;
+      exist = 1;
       if (action == 0 && f_permission[0] == "r") {  // read operation
-      	printf("[check_permission] enable by user permission\n");
-    	return 0;  
+        printf("[check_permission] enable by user permission\n");
+        return 0;
       }
 
       if (action == 1 && f_permission[1] == "w") {
         printf("[check_permission] enable by user permission\n");
-    	return 0; 
+        return 0;
       }
       break;
     }
@@ -274,13 +351,13 @@ int check_permission(char *filename, int action, char *group,
     sscanf(line, "%s %s", f_name, f_permission);
     if (strcmp(f_name, filename) == 0) {
       if (action == 0 && f_permission[0] == "r") {  // read operation
-      	printf("[check_permission] enable by group permission\n");
-    	return 0;  
+        printf("[check_permission] enable by group permission\n");
+        return 0;
       }
 
       if (action == 1 && f_permission[1] == "w") {
         printf("[check_permission] enable by group permission\n");
-    	return 0; 
+        return 0;
       }
       break;
     }
@@ -294,23 +371,23 @@ int check_permission(char *filename, int action, char *group,
     sscanf(line, "%s %s", f_name, f_permission);
     if (strcmp(f_name, filename) == 0) {
       if (action == 0 && f_permission[0] == "r") {  // read operation
-      	printf("[check_permission] enable by all permission\n");
-    	return 0;  
+        printf("[check_permission] enable by all permission\n");
+        return 0;
       }
 
       if (action == 1 && f_permission[1] == "w") {
         printf("[check_permission] enable by all permission\n");
-    	return 0; 
+        return 0;
       }
       break;
     }
   }
   fclose(fp);
-  
-  if(!exist){
-	  printf("file is not exist\n");
-	  return -1;
- }
+
+  if (!exist) {
+    printf("file is not exist\n");
+    return -1;
+  }
   return -2;
 
   /*
@@ -423,7 +500,8 @@ int main(int argc, char *argv[]) {
           case 'm':  // modify permission
             sscanf(recv_buffer, "%s %s %s", cmd, filename, argu);
             printf("%s %s %s\n", cmd, filename, argu);
-            int modify_result = modify_access_right(filename, argu, username);
+            int modify_result =
+                modify_access_right(filename, argu, username, group);
             if (modify_result == 0) {
               strcpy(send_buffer, "access right was modified successfully! \n");
               send(new_socket, send_buffer, sizeof(send_buffer), 0);
