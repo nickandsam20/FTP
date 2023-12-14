@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#define access_right "server_data/access_table.txt"
 #define group_right "server_data/group/"
 #define user_right "server_data/user/"
 #define all_right "server_data/all/all.txt"
@@ -19,72 +20,68 @@ int create_file(char *filename, char *permission, char *group,
   char file_path[50] = "server_data/file/";
   strcat(file_path, filename);
 
-  printf("user group:%s, permission:%s, file name:%s\n", group, permission,
+  printf("[create file]user group:%s, permission:%s, file name:%s\n", group, permission,
          filename);
 
+  //char u_p[4]="rwx", g_p[4]="rwx", a_p[4]="rwx";
   char u_p[4], g_p[4], a_p[4];
-  memccpy(u_p, permission[0], 3, sizeof(char));
-  memccpy(g_p, permission[3], 3, sizeof(char));
-  memccpy(a_p, permission[6], 3, sizeof(char));
-
+  memcpy(u_p, &permission[0], 3);
+  memcpy(g_p, &permission[3], 3);
+  memcpy(a_p, &permission[6], 3);
+	
   // for user permission
   char p_name[100] = "";
-  strcat(p_name, user_right);
-  strcat(p_name, owner);
-  strcat(p_name, ".txt\0");
+  char  content[100];
+  sprintf(p_name,"%s%s.txt",user_right,owner);
+  printf("[create file]writing permission to file %s\n",p_name);
   fp = fopen(p_name, "a");
   if (!fp) {
-    printf("open file 1 error\n");
+    printf("[create file]open file 1 error\n");
   } else {
-    fputs(filename, fp);
-    fputs(" ", fp);
-    u_p[3] = '\0';
-    fputs(u_p, fp);
+	u_p[3] = '\0';
+	sprintf(content,"%s %s\n",filename,u_p);
+	fputs(content,fp);
     fclose(fp);
   }
 
   // for group permission
-  p_name = "";
-  strcat(p_name, group_right);
-  strcat(p_name, group);
-  strcat(p_name, ".txt\0");
+  sprintf(p_name,"%s%s.txt",group_right,group);
+  printf("[create file]writing permission to file %s\n",p_name);
   fp = fopen(p_name, "a");
   if (!fp) {
-    printf("open file 2 error\n");
+    printf("[create file]open file 2 error\n");
   } else {
-    fputs(filename, fp);
-    fputs(" ", fp);
     g_p[3] = '\0';
-    fputs(g_p, fp);
+	sprintf(content,"%s %s\n",filename,g_p);
+	fputs(content,fp);
     fclose(fp);
   }
 
   // for other permission
-  p_name = "";
-  strcat(p_name, all_right);
+  sprintf(p_name,"%s",all_right);
+  printf("[create file]writing permission to file %s\n",p_name);
   fp = fopen(p_name, "a");
   if (!fp) {
-    printf("open file 3 error\n");
+    printf("[create file]open file 3 error\n");
   } else {
-    fputs(filename, fp);
-    fputs(" ", fp);
     a_p[3] = '\0';
-    fputs(a_p, fp);
+	sprintf(content,"%s %s\n",filename,a_p);
+	fputs(content,fp);
     fclose(fp);
   }
 
-  // fp = fopen(file_path, "w");
-  // fclose(fp);
-  // fp = fopen(access_right, "a");
-  // fputs(filename, fp);
-  // fputs(" ", fp);
-  // fputs(permission, fp);
-  // fputs(" ", fp);
-  // fputs(owner, fp);
-  // fputs(" ", fp);
-  // fputs(group, fp);
-  // fputs("\n", fp);
-  // fclose(fp);
+  fp = fopen(file_path, "w");
+  fclose(fp);
+  fp = fopen(access_right, "a");
+  fputs(filename, fp);
+  fputs(" ", fp);
+  fputs(permission, fp);
+  fputs(" ", fp);
+  fputs(owner, fp);
+  fputs(" ", fp);
+  fputs(group, fp);
+  fputs("\n", fp);
+  fclose(fp);
   return 0;
 }
 
