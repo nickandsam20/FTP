@@ -39,7 +39,7 @@ int create_file(char *filename, char *permission, char *group,
     fputs(filename, fp);
     fputs(" ", fp);
     u_p[3] = '\0';
-    fputs(u_p);
+    fputs(u_p, fp);
     fclose(fp);
   }
 
@@ -55,7 +55,7 @@ int create_file(char *filename, char *permission, char *group,
     fputs(filename, fp);
     fputs(" ", fp);
     g_p[3] = '\0';
-    fputs(g_p);
+    fputs(g_p, fp);
     fclose(fp);
   }
 
@@ -69,7 +69,7 @@ int create_file(char *filename, char *permission, char *group,
     fputs(filename, fp);
     fputs(" ", fp);
     a_p[3] = '\0';
-    fputs(a_p);
+    fputs(a_p, fp);
     fclose(fp);
   }
 
