@@ -14,59 +14,70 @@
 #define all_right "server_data/all/all.txt"
 #define group_member_path "server_data/group.txt"
 
+bool fileExists(const char *fname) {
+  FILE *fp;
+  if (fp = fopen(fname, "r")) {
+    fclose(fp);
+    return true;
+  }
+  return false;
+}
+
 int create_file(char *filename, char *permission, char *group,
                 char *owner) {  // file exist return 1 ; or return 0
   FILE *fp;
   char file_path[50] = "server_data/file/";
   strcat(file_path, filename);
 
-  printf("[create file]user group:%s, permission:%s, file name:%s\n", group, permission,
-         filename);
+  if (fileExists(file_path)) return -1;
 
-  //char u_p[4]="rwx", g_p[4]="rwx", a_p[4]="rwx";
+  printf("[create file]user group:%s, permission:%s, file name:%s\n", group,
+         permission, filename);
+
+  // char u_p[4]="rwx", g_p[4]="rwx", a_p[4]="rwx";
   char u_p[4], g_p[4], a_p[4];
   memcpy(u_p, &permission[0], 3);
   memcpy(g_p, &permission[3], 3);
   memcpy(a_p, &permission[6], 3);
-	
+
   // for user permission
   char p_name[100] = "";
-  char  content[100];
-  sprintf(p_name,"%s%s.txt",user_right,owner);
-  printf("[create file]writing permission to file %s\n",p_name);
+  char content[100];
+  sprintf(p_name, "%s%s.txt", user_right, owner);
+  printf("[create file]writing permission to file %s\n", p_name);
   fp = fopen(p_name, "a");
   if (!fp) {
     printf("[create file]open file 1 error\n");
   } else {
-	u_p[3] = '\0';
-	sprintf(content,"%s %s\n",filename,u_p);
-	fputs(content,fp);
+    u_p[3] = '\0';
+    sprintf(content, "%s %s\n", filename, u_p);
+    fputs(content, fp);
     fclose(fp);
   }
 
   // for group permission
-  sprintf(p_name,"%s%s.txt",group_right,group);
-  printf("[create file]writing permission to file %s\n",p_name);
+  sprintf(p_name, "%s%s.txt", group_right, group);
+  printf("[create file]writing permission to file %s\n", p_name);
   fp = fopen(p_name, "a");
   if (!fp) {
     printf("[create file]open file 2 error\n");
   } else {
     g_p[3] = '\0';
-	sprintf(content,"%s %s\n",filename,g_p);
-	fputs(content,fp);
+    sprintf(content, "%s %s\n", filename, g_p);
+    fputs(content, fp);
     fclose(fp);
   }
 
   // for other permission
-  sprintf(p_name,"%s",all_right);
-  printf("[create file]writing permission to file %s\n",p_name);
+  sprintf(p_name, "%s", all_right);
+  printf("[create file]writing permission to file %s\n", p_name);
   fp = fopen(p_name, "a");
   if (!fp) {
     printf("[create file]open file 3 error\n");
   } else {
     a_p[3] = '\0';
-	sprintf(content,"%s %s\n",filename,a_p);
-	fputs(content,fp);
+    sprintf(content, "%s %s\n", filename, a_p);
+    fputs(content, fp);
     fclose(fp);
   }
 
@@ -230,38 +241,95 @@ int check_permission(char *filename, int action, char *group,
   FILE *fp;
   int exist = 0;
   char line[80], f_owner[20], f_name[20], f_permission[15], f_group[10];
-  fp = fopen(access_right, "r");
+
+  char p_file_name[100];
+  sprintf(p_file_name, "%s%s.txt", user_right, username);
+  printf("[check_permission]checking file:%s\n", p_file_name);
+  fp = fopen(p_file_name, "r");
   while (fgets(line, sizeof(line), fp) != NULL) {
-    sscanf(line, "%s %s %s %s", f_name, f_permission, f_owner, f_group);
+    sscanf(line, "%s %s", f_name, f_permission);
     if (strcmp(f_name, filename) == 0) {
-      exist = 1;
-      if (action == 0) {             // check read premission
-        if (f_permission[6] == 'r')  // check if everyone can read or not
-          return 0;
-        if (strcmp(f_group, group) == 0) {  // if he/she is group member
-          if (f_permission[3] == 'r') return 0;
-        }
-        if (strcmp(f_owner, username) == 0) {
-          if (f_permission[0] == 'r') return 0;
-        }
-        return -2;                   // doesnt have permission to read
-      } else {                       // write
-        if (f_permission[7] == 'w')  // check if everyone can write or not
-          return 0;
-        if (strcmp(f_group, group) == 0) {  // if he/she is group member
-          if (f_permission[4] == 'w') return 0;
-        }
-        if (strcmp(f_owner, username) == 0) {
-          if (f_permission[1] == 'w') return 0;
-        }
-        return -2;  // doesnt have permission to write
+      if (action == 0) {  // read operation
+        if (f_permission[0] == "r") return 0;
       }
+
+      if (action == 1) {
+        if (f_permission[1] == "w") return 0;
+      }
+      break;
     }
   }
   fclose(fp);
-  if (exist == 0) {
-    return -1;
+
+  sprintf(p_file_name, "%s%s.txt", group_right, group);
+  printf("[check_permission]checking file:%s\n", p_file_name);
+  fp = fopen(p_file_name, "r");
+  while (fgets(line, sizeof(line), fp) != NULL) {
+    sscanf(line, "%s %s", f_name, f_permission);
+    if (strcmp(f_name, filename) == 0) {
+      if (action == 0) {  // read operation
+        if (f_permission[0] == "r") return 0;
+      }
+      if (action == 1) {
+        if (f_permission[1] == "w") return 0;
+      }
+      break;
+    }
   }
+  fclose(fp);
+
+  sprintf(p_file_name, "%s", all_right);
+  printf("[check_permission]checking file:%s\n", p_file_name);
+  fp = fopen(p_file_name, "r");
+  while (fgets(line, sizeof(line), fp) != NULL) {
+    sscanf(line, "%s %s", f_name, f_permission);
+    if (strcmp(f_name, filename) == 0) {
+      if (action == 0) {  // read operation
+        if (f_permission[0] == "r") return 0;
+      }
+      if (action == 1) {
+        if (f_permission[1] == "w") return 0;
+      }
+      break;
+    }
+  }
+  fclose(fp);
+  return -1;
+
+  /*
+fp = fopen(access_right, "r");
+while (fgets(line, sizeof(line), fp) != NULL) {
+  sscanf(line, "%s %s %s %s", f_name, f_permission, f_owner, f_group);
+  if (strcmp(f_name, filename) == 0) {
+    exist = 1;
+    if (action == 0) {             // check read premission
+      if (f_permission[6] == 'r')  // check if everyone can read or not
+        return 0;
+      if (strcmp(f_group, group) == 0) {  // if he/she is group member
+        if (f_permission[3] == 'r') return 0;
+      }
+      if (strcmp(f_owner, username) == 0) {
+        if (f_permission[0] == 'r') return 0;
+      }
+      return -2;                   // doesnt have permission to read
+    } else {                       // write
+      if (f_permission[7] == 'w')  // check if everyone can write or not
+        return 0;
+      if (strcmp(f_group, group) == 0) {  // if he/she is group member
+        if (f_permission[4] == 'w') return 0;
+      }
+      if (strcmp(f_owner, username) == 0) {
+        if (f_permission[1] == 'w') return 0;
+      }
+      return -2;  // doesnt have permission to write
+    }
+  }
+}
+fclose(fp);
+if (exist == 0) {
+  return -1;
+}
+*/
 }
 
 int main(int argc, char *argv[]) {
