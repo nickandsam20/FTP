@@ -162,7 +162,8 @@ int main() {
       }
       if (strcmp(cmd, "changemode") == 0) {  // modify access right
         printf("modify %s premission to %s\n", filename, argu);
-        strcpy(send_buffer, input);
+        sprintf(send_buffer, "mode %s %s", filename, argu);
+        // strcpy(send_buffer, input);
         send(c_socket, send_buffer, sizeof(send_buffer), 0);
         recv(c_socket, recv_buffer, sizeof(recv_buffer), 0);
         printf("%s", recv_buffer);
