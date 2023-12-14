@@ -93,8 +93,8 @@ int check_file_exist(char* filename, int action) {
 int main() {
   struct sockaddr_in server_addr;
   int c_socket, connect_result, argc;
-  char input[40], send_buffer[512], recv_buffer[512];
-  char cmd[10], filename[20], argu[15];
+  char input[80], send_buffer[512], recv_buffer[512];
+  char cmd[20], filename[20], argu[15];
   char username[20];
   if ((c_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     perror("open socket failed !\n");
@@ -137,6 +137,7 @@ int main() {
         }
       }
     } else if (argc == 3) {
+    	printf("@@@ cmd:%s\n",cmd);
       if (strcmp(cmd, "write") == 0) {  // write file
         if (strcmp(argu, "o") == 0 || strcmp(argu, "a") == 0) {
           if (check_file_exist(filename, 1) == 0) {
@@ -163,6 +164,7 @@ int main() {
       if (strcmp(cmd, "changemode") == 0) {  // modify access right
         printf("modify %s premission to %s\n", filename, argu);
         sprintf(send_buffer, "mode %s %s", filename, argu);
+        printf("new commend:%s\n",send_buffer);
         // strcpy(send_buffer, input);
         send(c_socket, send_buffer, sizeof(send_buffer), 0);
         recv(c_socket, recv_buffer, sizeof(recv_buffer), 0);

@@ -1,1 +1,6 @@
 test1.txt rwx---r-- Jack CSE
+tcreate test1.txt Jack CSE
+t4.txt a Jack CSE
+tt.txt --------- Jack CSE
+th.txt --------- Jimmy CSE
+test111.txt rwxrwxrwx Jack CSE
