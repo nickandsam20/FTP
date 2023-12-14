@@ -114,14 +114,14 @@ void search_group(char *username, char *group) {
   fclose(fp);
 }
 
-int modify_access_right(char *filename, char *permission, char *username,
-                        char *group) {
+int modify_access_right(char *filename, char *permission, char *username,char *group) {
   FILE *fp, *ftmp;
   char line[80], f_owner[20], f_name[20], f_permission[15], f_group[10];
   char buffer[80];
   int exist = 0;
   char p_name[100], p_tmp_name[100];
 
+	printf("[modify] start modify access right,filename:%s,permission:%s,group:%s\n",filename,permission,group);
   sprintf(p_name, "%s%s.txt", user_right, username);
   sprintf(p_tmp_name, "%s%stmp.txt", user_right, username);
 
@@ -132,14 +132,16 @@ int modify_access_right(char *filename, char *permission, char *username,
     if (strcmp(f_name, filename) == 0) {  // find the file
       exist = 1;
       char new_line[50];
-      sprintf(new_line, "%s %s", f_name, f_permission);
+      sprintf(new_line, "%s %c%c%c", f_name, permission[0],permission[1],permission[2]);
       fputs(new_line, ftmp);
     } else {
       fputs(line, ftmp);
     }
     memset(line, '\0', sizeof(line));
   }
+  
   if (!exist) {
+	  printf("[modify] file not exist:%s\n",p_name);
     fclose(fp);
     fclose(ftmp);
     remove(p_tmp_name);
@@ -149,6 +151,7 @@ int modify_access_right(char *filename, char *permission, char *username,
   fclose(ftmp);
   remove(p_name);
   rename(p_tmp_name, p_name);
+  printf("[modify] finish modify user file:%s\n",p_name);
 
   sprintf(p_name, "%s%s.txt", group_right, group);
   sprintf(p_tmp_name, "%s%stmp.txt", user_right, group);
@@ -159,7 +162,7 @@ int modify_access_right(char *filename, char *permission, char *username,
     sscanf(line, "%s %s", f_name, f_permission);
     if (strcmp(f_name, filename) == 0) {  // find the file
       char new_line[50];
-      sprintf(new_line, "%s %s", f_name, f_permission);
+      sprintf(new_line, "%s %c%c%c", f_name, permission[3],permission[4],permission[5]);
       fputs(new_line, ftmp);
     } else {
       fputs(line, ftmp);
@@ -170,8 +173,9 @@ int modify_access_right(char *filename, char *permission, char *username,
   fclose(ftmp);
   remove(p_name);
   rename(p_tmp_name, p_name);
+  printf("[modify] finish modify group file:%s\n",p_name);
 
-  sprintf(p_name, "%s", all_right, );
+  sprintf(p_name, "%s", all_right);
   sprintf(p_tmp_name, "server_data/all/all_right_tmp.txt");
 
   fp = fopen(p_name, "r");
@@ -180,7 +184,7 @@ int modify_access_right(char *filename, char *permission, char *username,
     sscanf(line, "%s %s", f_name, f_permission);
     if (strcmp(f_name, filename) == 0) {  // find the file
       char new_line[50];
-      sprintf(new_line, "%s %s", f_name, f_permission);
+      sprintf(new_line, "%s %c%c%c", f_name, permission[6],permission[7],permission[8]);
       fputs(new_line, ftmp);
     } else {
       fputs(line, ftmp);
@@ -192,6 +196,7 @@ int modify_access_right(char *filename, char *permission, char *username,
   fclose(ftmp);
   remove(p_name);
   rename(p_tmp_name, p_name);
+  printf("[modify] finish modify all file:%s\n",p_name);
   return 0;
   /*
     fp = fopen(access_right, "r");
@@ -472,6 +477,7 @@ int main(int argc, char *argv[]) {
         memset(recv_buffer, '\0', sizeof(recv_buffer));
         memset(send_buffer, '\0', sizeof(send_buffer));
         recv(new_socket, recv_buffer, sizeof(recv_buffer), 0);
+        printf("recv:%s\n",recv_buffer);
         switch (recv_buffer[0]) {
           case 'c':  // create file
             sscanf(recv_buffer, "%s %s %s", cmd, filename, argu);
@@ -500,8 +506,8 @@ int main(int argc, char *argv[]) {
           case 'm':  // modify permission
             sscanf(recv_buffer, "%s %s %s", cmd, filename, argu);
             printf("%s %s %s\n", cmd, filename, argu);
-            int modify_result =
-                modify_access_right(filename, argu, username, group);
+            int modify_result = modify_access_right(filename, argu, username,group);
+            //int modify_result = 0;
             if (modify_result == 0) {
               strcpy(send_buffer, "access right was modified successfully! \n");
               send(new_socket, send_buffer, sizeof(send_buffer), 0);
