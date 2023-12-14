@@ -337,28 +337,34 @@ int check_permission(char *filename, int action, char *group,
   sprintf(p_file_name, "%s%s.txt", user_right, username);
   printf("[check_permission]checking file:%s\n", p_file_name);
   fp = fopen(p_file_name, "r");
-  while (fgets(line, sizeof(line), fp) != NULL) {
-    sscanf(line, "%s %s", f_name, f_permission);
-    printf("%s permission: %s-%s\n", username, f_name, f_permission);
-    if (strcmp(f_name, filename) == 0) {
-      exist = 1;
-      if (action == 0) {  // read operation
-        if (f_permission[0] == 'r') {
-          printf("[check_permission] enable by user permission\n");
-          return 0;
+  if (fp) {
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      sscanf(line, "%s %s", f_name, f_permission);
+      printf("%s permission: %s-%s\n", username, f_name, f_permission);
+      if (strcmp(f_name, filename) == 0) {
+        exist = 1;
+        if (action == 0) {  // read operation
+          if (f_permission[0] == 'r') {
+            printf("[check_permission] enable by user permission\n");
+            return 0;
+          }
         }
-      }
 
-      if (action == 1) {
-        if (f_permission[1] == 'w') {
-          printf("[check_permission] enable by user permission\n");
-          return 0;
+        if (action == 1) {
+          if (f_permission[1] == 'w') {
+            printf("[check_permission] enable by user permission\n");
+            return 0;
+          }
         }
+        break;
       }
-      break;
     }
+    fclose(fp);
+  } else {
+    printf(
+        "[check_permission]don't have perrmision file,pass checking user "
+        "permission\n");
   }
-  fclose(fp);
 
   sprintf(p_file_name, "%s%s.txt", group_right, group);
   printf("[check_permission]checking file:%s\n", p_file_name);
