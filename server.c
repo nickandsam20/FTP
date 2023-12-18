@@ -356,27 +356,29 @@ int check_permission(char *filename, int action, char *group,
   sprintf(p_file_name, "%s%s.txt", group_right, group);
   printf("[check_permission]checking file:%s\n", p_file_name);
   fp = fopen(p_file_name, "r");
-  while (fgets(line, sizeof(line), fp) != NULL) {
-    sscanf(line, "%s %s", f_name, f_permission);
-    printf("%s permission: %s-%s\n", group, f_name, f_permission);
-    if (strcmp(f_name, filename) == 0) {
-      if (action == 0) {  // read operation
-        if (f_permission[0] == 'r') {
-          printf("[check_permission] enable by group permission\n");
-          return 0;
+  if (fp) {
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      sscanf(line, "%s %s", f_name, f_permission);
+      printf("%s permission: %s-%s\n", group, f_name, f_permission);
+      if (strcmp(f_name, filename) == 0) {
+        if (action == 0) {  // read operation
+          if (f_permission[0] == 'r') {
+            printf("[check_permission] enable by group permission\n");
+            return 0;
+          }
         }
-      }
 
-      if (action == 1) {
-        if (f_permission[1] == 'w') {
-          printf("[check_permission] enable by group permission\n");
-          return 0;
+        if (action == 1) {
+          if (f_permission[1] == 'w') {
+            printf("[check_permission] enable by group permission\n");
+            return 0;
+          }
         }
+        break;
       }
-      break;
     }
+    fclose(fp);
   }
-  fclose(fp);
 
   // 如果是檔案擁有者,就不能檢查other權限
   if (exist) {
@@ -389,27 +391,29 @@ int check_permission(char *filename, int action, char *group,
   sprintf(p_file_name, "%s", all_right);
   printf("[check_permission]checking file:%s\n", p_file_name);
   fp = fopen(p_file_name, "r");
-  while (fgets(line, sizeof(line), fp) != NULL) {
-    sscanf(line, "%s %s", f_name, f_permission);
-    printf("%s permission: %s-%s\n", "all", f_name, f_permission);
-    if (strcmp(f_name, filename) == 0) {
-      if (action == 0) {  // read operation
-        if (f_permission[0] == 'r') {
-          printf("[check_permission] enable by all permission\n");
-          return 0;
+  if (fp) {
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      sscanf(line, "%s %s", f_name, f_permission);
+      printf("%s permission: %s-%s\n", "all", f_name, f_permission);
+      if (strcmp(f_name, filename) == 0) {
+        if (action == 0) {  // read operation
+          if (f_permission[0] == 'r') {
+            printf("[check_permission] enable by all permission\n");
+            return 0;
+          }
         }
-      }
 
-      if (action == 1) {
-        if (f_permission[1] == 'w') {
-          printf("[check_permission] enable by all permission\n");
-          return 0;
+        if (action == 1) {
+          if (f_permission[1] == 'w') {
+            printf("[check_permission] enable by all permission\n");
+            return 0;
+          }
         }
+        break;
       }
-      break;
     }
+    fclose(fp);
   }
-  fclose(fp);
 
   return -2;
 }
