@@ -121,18 +121,20 @@ int modify_access_right(char *filename, char *permission, char *username,
 
   fp = fopen(p_name, "r");
   ftmp = fopen(p_tmp_name, "w");
-  while (fgets(line, sizeof(line), fp) != NULL) {
-    sscanf(line, "%s %s", f_name, f_permission);
-    if (strcmp(f_name, filename) == 0) {  // find the file
-      exist = 1;
-      char new_line[50];
-      sprintf(new_line, "%s %c%c%c", f_name, permission[0], permission[1],
-              permission[2]);
-      fputs(new_line, ftmp);
-    } else {
-      fputs(line, ftmp);
+  if (fp && ftmp) {
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      sscanf(line, "%s %s", f_name, f_permission);
+      if (strcmp(f_name, filename) == 0) {  // find the file
+        exist = 1;
+        char new_line[50];
+        sprintf(new_line, "%s %c%c%c", f_name, permission[0], permission[1],
+                permission[2]);
+        fputs(new_line, ftmp);
+      } else {
+        fputs(line, ftmp);
+      }
+      memset(line, '\0', sizeof(line));
     }
-    memset(line, '\0', sizeof(line));
   }
 
   // 檢查是不是owner,不是owner代表沒有權限修改權限,就直接return不做權限修改
@@ -143,9 +145,12 @@ int modify_access_right(char *filename, char *permission, char *username,
     remove(p_tmp_name);
     return -1;
   }
-  fclose(fp);
+  if (fp) {
+    fclose(fp);
+    remove(p_name);
+  }
+
   fclose(ftmp);
-  remove(p_name);
   rename(p_tmp_name, p_name);
   printf("[modify] finish modify user file:%s\n", p_name);
 
@@ -154,45 +159,49 @@ int modify_access_right(char *filename, char *permission, char *username,
 
   fp = fopen(p_name, "r");
   ftmp = fopen(p_tmp_name, "w");
-  while (fgets(line, sizeof(line), fp) != NULL) {
-    sscanf(line, "%s %s", f_name, f_permission);
-    if (strcmp(f_name, filename) == 0) {  // find the file
-      char new_line[50];
-      sprintf(new_line, "%s %c%c%c", f_name, permission[3], permission[4],
-              permission[5]);
-      fputs(new_line, ftmp);
-    } else {
-      fputs(line, ftmp);
+  if (fp && ftmp) {
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      sscanf(line, "%s %s", f_name, f_permission);
+      if (strcmp(f_name, filename) == 0) {  // find the file
+        char new_line[50];
+        sprintf(new_line, "%s %c%c%c", f_name, permission[3], permission[4],
+                permission[5]);
+        fputs(new_line, ftmp);
+      } else {
+        fputs(line, ftmp);
+      }
+      memset(line, '\0', sizeof(line));
     }
-    memset(line, '\0', sizeof(line));
+    fclose(fp);
+    remove(p_name);
   }
-  fclose(fp);
+
   fclose(ftmp);
-  remove(p_name);
   rename(p_tmp_name, p_name);
   printf("[modify] finish modify group file:%s\n", p_name);
-
   sprintf(p_name, "%s", all_right);
   sprintf(p_tmp_name, "server_data/all/all_right_tmp.txt");
 
   fp = fopen(p_name, "r");
   ftmp = fopen(p_tmp_name, "w");
-  while (fgets(line, sizeof(line), fp) != NULL) {
-    sscanf(line, "%s %s", f_name, f_permission);
-    if (strcmp(f_name, filename) == 0) {  // find the file
-      char new_line[50];
-      sprintf(new_line, "%s %c%c%c", f_name, permission[6], permission[7],
-              permission[8]);
-      fputs(new_line, ftmp);
-    } else {
-      fputs(line, ftmp);
+  if (fp) {
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      sscanf(line, "%s %s", f_name, f_permission);
+      if (strcmp(f_name, filename) == 0) {  // find the file
+        char new_line[50];
+        sprintf(new_line, "%s %c%c%c", f_name, permission[6], permission[7],
+                permission[8]);
+        fputs(new_line, ftmp);
+      } else {
+        fputs(line, ftmp);
+      }
+      memset(line, '\0', sizeof(line));
     }
-    memset(line, '\0', sizeof(line));
+    fclose(fp);
+    remove(p_name);
   }
 
-  fclose(fp);
   fclose(ftmp);
-  remove(p_name);
   rename(p_tmp_name, p_name);
   printf("[modify] finish modify all file:%s\n", p_name);
   return 0;
