@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/file.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #define access_right "server_data/access_table.txt"
@@ -15,12 +16,18 @@
 #define group_member_path "server_data/group.txt"
 
 int fileExists(const char *fname) {
-  FILE *fp;
-  if (fp = fopen(fname, "r")) {
-    fclose(fp);
+  //   FILE *fp;
+  //   if (fp = fopen(fname, "r")) {
+  //     fclose(fp);
+  //     return 1;
+  //   }
+  //   return 0;
+  struct stat buffer;
+  int exist = stat(fname, &buffer);
+  if (exist == 0)
     return 1;
-  }
-  return 0;
+  else
+    return 0;
 }
 
 int create_file(char *filename, char *permission, char *group,
