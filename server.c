@@ -290,7 +290,7 @@ void write_file(char *filename, char *username, char *group, int socket,
 int check_permission(char *filename, int action, char *group,
                      char *username) {  // action 0 read ; 1 write
   char tmp_path[100];
-  sprintf(tmp_path, "server_data/file/%s.txt", filename);
+  sprintf(tmp_path, "server_data/file/%s", filename);
   printf("file path:%s\n", tmp_path);
   if (!fileExists(tmp_path)) {
     printf("[check_permission] file not exist\n");
