@@ -366,6 +366,9 @@ int check_permission(char *filename, int action, char *group,
 
   // 如果是檔案擁有者,就不能檢查other權限
   if (exist) {
+    printf(
+        "[check_permission] is file owner but dusable by owner and group "
+        "permission\n");
     return -2;
   }
 
