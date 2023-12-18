@@ -13,11 +13,11 @@
 * 開啟client: ./client
 
 * client 可用指令:
-    * 新增檔案: create <檔名> <權限>
-        * 範例: create test.txt rwx---rw-
-    * 下載檔案: read <檔名>
-    * 修改權限: changemode <檔名> <新權限>
-    * 修改檔案: write <檔名> <a/o>
+    * 新增檔案: ```create <檔名> <權限>```
+        * 範例: ```create test.txt rwx---rw-```
+    * 下載檔案: ```read <檔名>```
+    * 修改權限: ```changemode <檔名> <新權限>```
+    * 修改檔案: ```write <檔名> <a/o>```
         * a代表append, o代表overwrite
         * 範例1: ```write text.txt a```,此指令會把本地的text.txt內容append到遠端的text.txt後面
         * 範例2: ```write text.txt o```,此指令會把本地的text.txt內容取代遠端的text.txt
