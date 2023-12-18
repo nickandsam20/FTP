@@ -29,7 +29,7 @@ int create_file(char *filename, char *permission, char *group,
   char file_path[50] = "server_data/file/";
   strcat(file_path, filename);
 
-  if (fileExists(file_path)) return -1;
+  if (fileExists(file_path)) return 1;
 
   printf("[create file]user group:%s, permission:%s, file name:%s\n", group,
          permission, filename);
@@ -83,19 +83,9 @@ int create_file(char *filename, char *permission, char *group,
 
   fp = fopen(file_path, "w");
   fclose(fp);
-  fp = fopen(access_right, "a");
-  fputs(filename, fp);
-  fputs(" ", fp);
-  fputs(permission, fp);
-  fputs(" ", fp);
-  fputs(owner, fp);
-  fputs(" ", fp);
-  fputs(group, fp);
-  fputs("\n", fp);
-  fclose(fp);
+
   return 0;
 }
-
 void search_group(char *username, char *group) {
   FILE *fp;
   char line[30], member[20], g[10];
@@ -119,7 +109,7 @@ int modify_access_right(char *filename, char *permission, char *username,
   FILE *fp, *ftmp;
   char line[80], f_owner[20], f_name[20], f_permission[15], f_group[10];
   char buffer[80];
-  int exist = 0;
+  int exist = 0;  // 用exist代表是否這個username是檔案擁有者(owner)
   char p_name[100], p_tmp_name[100];
 
   printf(
@@ -144,8 +134,9 @@ int modify_access_right(char *filename, char *permission, char *username,
     memset(line, '\0', sizeof(line));
   }
 
+  // 檢查是不是owner,不是owner代表沒有權限修改權限,就直接return不做權限修改
   if (!exist) {
-    printf("[modify] file not exist:%s\n", p_name);
+    printf("[modify] you are not file owner,can't change mode:%s\n", p_name);
     fclose(fp);
     fclose(ftmp);
     remove(p_tmp_name);
@@ -204,32 +195,6 @@ int modify_access_right(char *filename, char *permission, char *username,
   rename(p_tmp_name, p_name);
   printf("[modify] finish modify all file:%s\n", p_name);
   return 0;
-  /*
-    fp = fopen(access_right, "r");
-    ftmp = fopen("server_data/replace.tmp", "w");
-    while (fgets(line, sizeof(line), fp) != NULL) {
-      sscanf(line, "%s %s %s %s", f_name, f_permission, f_owner, f_group);
-      if (strcmp(f_name, filename) == 0) {  // find the file
-        exist = 1;
-        if (strcmp(username, f_owner) == 0) {  // if user is owner
-          sprintf(buffer, "%s %s %s %s\n", f_name, permission, f_owner,
-    f_group); fputs(buffer, ftmp); } else { return -1;
-        }
-      } else {
-        fputs(line, ftmp);
-      }
-      memset(line, '\0', sizeof(line));
-    }
-    remove(access_right);
-    rename("server_data/replace.tmp", access_right);
-    fclose(fp);
-    fclose(ftmp);
-    if (exist == 0) {
-      return -2;
-    } else {
-      return 0;
-    }
-    */
 }
 void read_file(char *filename, char *username, char *group, int socket) {
   int p;
@@ -271,9 +236,8 @@ void read_file(char *filename, char *username, char *group, int socket) {
       send(socket, send_buffer, sizeof(send_buffer), 0);
       fclose(fp);
     } else {
-      strcpy(
-          send_buffer,
-          "somebody is writing/reading this file,please try again later! \n");
+      strcpy(send_buffer,
+             "somebody is writing this file,please try again later! \n");
       send(socket, send_buffer, sizeof(send_buffer), 0);
       printf("somebody is writing this file!\n");
     }
@@ -321,8 +285,15 @@ void write_file(char *filename, char *username, char *group, int socket,
   }
 }
 
+// return 0:有權限,-1:沒有這個檔案,-2:沒有權限
 int check_permission(char *filename, int action, char *group,
                      char *username) {  // action 0 read ; 1 write
+  char tmp_path[100];
+  sprintf(tmp_path, "%s%s.txt", "/server_data/file/", filename);
+  if (!fileExists(tmp_path)) {
+    printf("[check_permission] file not exist\n");
+    return -1;
+  }
   FILE *fp;
 
   int exist = 0;
@@ -334,6 +305,7 @@ int check_permission(char *filename, int action, char *group,
       "[check_permission] start checking "
       "permission,filename:%s,action:%d,group:%s,username:%s\n",
       filename, action, group, username);
+  // check whether user is file owner ,and check by owner permission
   sprintf(p_file_name, "%s%s.txt", user_right, username);
   printf("[check_permission]checking file:%s\n", p_file_name);
   fp = fopen(p_file_name, "r");
@@ -366,6 +338,7 @@ int check_permission(char *filename, int action, char *group,
         "permission\n");
   }
 
+  // check whether the group user belong to has the right to access
   sprintf(p_file_name, "%s%s.txt", group_right, group);
   printf("[check_permission]checking file:%s\n", p_file_name);
   fp = fopen(p_file_name, "r");
@@ -390,6 +363,11 @@ int check_permission(char *filename, int action, char *group,
     }
   }
   fclose(fp);
+
+  // 如果是檔案擁有者,就不能檢查other權限
+  if (exist) {
+    return -2;
+  }
 
   sprintf(p_file_name, "%s", all_right);
   printf("[check_permission]checking file:%s\n", p_file_name);
@@ -416,46 +394,7 @@ int check_permission(char *filename, int action, char *group,
   }
   fclose(fp);
 
-  if (!exist) {
-    printf("file is not exist\n");
-    return -1;
-  }
   return -2;
-
-  /*
-fp = fopen(access_right, "r");
-while (fgets(line, sizeof(line), fp) != NULL) {
-  sscanf(line, "%s %s %s %s", f_name, f_permission, f_owner, f_group);
-  if (strcmp(f_name, filename) == 0) {
-    exist = 1;
-    if (action == 0) {             // check read premission
-      if (f_permission[6] == 'r')  // check if everyone can read or not
-        return 0;
-      if (strcmp(f_group, group) == 0) {  // if he/she is group member
-        if (f_permission[3] == 'r') return 0;
-      }
-      if (strcmp(f_owner, username) == 0) {
-        if (f_permission[0] == 'r') return 0;
-      }
-      return -2;                   // doesnt have permission to read
-    } else {                       // write
-      if (f_permission[7] == 'w')  // check if everyone can write or not
-        return 0;
-      if (strcmp(f_group, group) == 0) {  // if he/she is group member
-        if (f_permission[4] == 'w') return 0;
-      }
-      if (strcmp(f_owner, username) == 0) {
-        if (f_permission[1] == 'w') return 0;
-      }
-      return -2;  // doesnt have permission to write
-    }
-  }
-}
-fclose(fp);
-if (exist == 0) {
-  return -1;
-}
-*/
 }
 
 int main(int argc, char *argv[]) {
