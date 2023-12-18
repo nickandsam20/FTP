@@ -1,2 +1,0 @@
-test1.txt rwxtt.txt ---
-th.txt rwxtest111.txt rwx
