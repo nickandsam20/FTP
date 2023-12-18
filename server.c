@@ -140,7 +140,10 @@ int modify_access_right(char *filename, char *permission, char *username,
   // 檢查是不是owner,不是owner代表沒有權限修改權限,就直接return不做權限修改
   if (!exist) {
     printf("[modify] you are not file owner,can't change mode:%s\n", p_name);
-    fclose(fp);
+
+    if (fp) {
+      fclose(fp);
+    }
     fclose(ftmp);
     remove(p_tmp_name);
     return -1;
